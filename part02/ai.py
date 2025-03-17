@@ -20,15 +20,11 @@ response = client.chat.completions.create(
 			"role": "user",
 			"content": "こんにちは！私はジョンと言います。"
 		},
-		{
-			"role": "assistant",
-			"content": "こんにちはジョンさん！お会いできて嬉しいです。今日はどんなことをお話ししましょうか？"
-		},
-		{
-			"role": "user",
-			"content": "私の名前がわかりますか？"
-		}
-	]
+	],
+	stream=True
 )
 
-print(response.to_json(indent=2))
+for chunk in response:
+	content = chunk.choices[0].delta.content
+	if content is not None:
+		print(content, end="", flush=True)

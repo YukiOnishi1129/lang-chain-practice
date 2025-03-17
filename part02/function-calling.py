@@ -42,6 +42,8 @@ def get_current_weather(location, unit="fahrenheit"):
 		)
 	
 
+	
+
 tools = [
 	{
 		"type": "function",
@@ -82,4 +84,42 @@ response = client.chat.completions.create(
 	tools=tools,
 )
 
-print(response.to_json(indent=2))
+response_message = response.choices[0].message
+messages.append(response_message.to_dict())
+
+available_functions = {
+	"get_current_weather": get_current_weather,
+}
+
+# 使いたい関数は複数あるかもなのでループ
+for tool_call in response_message.tool_calls:
+	# 関数を実行
+	function_name = tool_call.function.name
+	function_to_call = available_functions[function_name]
+	function_args = json.loads(tool_call.function.arguments)
+	function_response = function_to_call(
+		location=function_args.get("location"),
+		unit=function_args.get("unit"),
+	)
+
+	# 関数の実行結果を会話履歴としてmessagesに追加
+	messages.append(
+		{
+			"tool_call_id": tool_call.id,
+			"role": "tool",
+			"name": function_name,
+			"content": function_response,
+		}
+	)
+
+# print(response.to_json(indent=2))
+
+print(json.dumps(messages, ensure_ascii=False, indent=2))
+
+
+second_response = client.chat.completions.create(
+	model="gpt-4o",
+	messages=messages,
+)
+
+print(second_response.to_json(indent=2))
